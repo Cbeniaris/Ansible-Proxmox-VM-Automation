@@ -1,0 +1,32 @@
+---
+  - name: Ensure http service is enabled
+    ansible.posix.firewalld:
+      service: http
+      state: enabled
+      permanent: true
+      immediate: true
+
+  - name: Update DNF cache
+    dnf:
+      update_cache: yes
+    
+  - name: Install Java JRE
+    dnf:
+      name: "java-21-openjdk-headless"
+      state: present
+  
+  - name: Verify Java installation
+    command: java -version
+    register: java_version_output
+    changed_when: false
+    
+  - name: Display Java version
+    debug:
+      msg: "{{ java_version_output.stderr_lines }}"
+  
+  - name: Set JAVA_HOME environment variable
+    lineinfile:
+      path: /etc/environment
+      line: "JAVA_HOME=/usr/lib/jvm/jre-{{ java_version }}-openjdk"
+      create: yes
+      state: present

@@ -1,0 +1,97 @@
+---
+- name: Create Proxmox VMs
+  hosts: homelab
+  gather_facts: no
+  vars_files:
+    - vault.yml
+
+  vars:
+    proxmox_host: "192.168.1.100"
+    proxmox_user: "ansible@pve"
+    #
+    # You will need to make an ansible vault file in this directory with the entry:
+    # vault_proxmox_password: "your-password-here"
+    #
+    proxmox_password: "{{ vault_proxmox_password }}"  
+    proxmox_node: "pve"
+    template_name: "rhel-9.6-template"  
+    network_subnet: 192.168.1
+
+    # Customization variables
+    vm_base_name: "rhel-clone" # Base name for VMs
+    vm_count: 1 # Number of VMs to create
+    vm_memory: 4096 # Memory in MB
+    vm_cores: 2 # CPU cores
+    auto_start: true # Start VMs after creation
+
+  tasks:
+  - name: Get list of existing VMs
+    community.proxmox.proxmox_vm_info:
+      api_host: "{{ proxmox_host }}"
+      api_user: "{{ proxmox_user }}"
+      api_password: "{{ proxmox_password }}"
+      validate_certs: no
+      node: "{{ proxmox_node }}"
+    register: vm_list
+
+  - name: Calculate starting VMID
+    set_fact:
+      starting_vmid: "{{ (vm_list.proxmox_vms | map(attribute='vmid') | map('int') | max | default(99)) + 1 }}"
+
+  - name: Display starting VMID
+    debug:
+      msg: "Starting VMID: {{ starting_vmid }}, creating {{ vm_count }} VMs"
+
+  - name: Clone VMs from template
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox_host }}"
+      api_user: "{{ proxmox_user }}"
+      api_password: "{{ proxmox_password }}"
+      validate_certs: no
+      node: "{{ proxmox_node }}"
+      clone: "{{ template_name }}"
+      newid: "{{ starting_vmid | int + item }}"
+      name: "{{ vm_base_name }}-{{ item + 1 }}" 
+      full: yes
+      ipconfig:
+        ipconfig0: "ip=192.168.1.200/24,gw=102.168.1.1"
+      timeout: 300
+
+      memory: "{{ vm_memory }}"
+      cores: "{{ vm_cores }}"
+
+      state: present
+    loop: "{{ range(0, vm_count) | list }}"
+    register: cloned_vms
+
+  - name: Start VMs
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox_host }}"
+      api_user: "{{ proxmox_user }}"
+      api_password: "{{ proxmox_password }}"
+      validate_certs: no
+      node: "{{ proxmox_node }}"
+      vmid: "{{ starting_vmid | int + item }}"
+      state: started
+      timeout: 60
+    loop: "{{ range(0, vm_count) | list }}"
+    when: auto_start
+
+  - name: Wait for VMs to be accessible
+    wait_for:
+      #host: "{{ network_subnet }}.{{ starting_ip_octet + item }}"
+      host: 192.168.1.200
+      port: 22
+      delay: 10
+      timeout: 300
+    loop: "{{ range(0, vm_count) | list }}"
+    
+  - name: Import tasks to manage services post creation
+    import_tasks: vm_package_setup.yml
+
+  - name: Display completion
+    debug:
+      msg: "Created {{ vm_count }} VM(s).  Firewalld enabled and JRE21 installed and running on all machines."
+    
+    
+
