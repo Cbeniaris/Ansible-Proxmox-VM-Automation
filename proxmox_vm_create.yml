@@ -19,10 +19,13 @@
 
     # Customization variables
     vm_base_name: "rhel-clone" # Base name for VMs
-    vm_count: 2 # Number of VMs to create
+    vm_count: 1 # Number of VMs to create
     vm_memory: 4096 # Memory in MB
     vm_cores: 2 # CPU cores
     auto_start: true # Start VMs after creation
+    ci_user: "ansible" # Desired name of created user
+    ci_password: "password" # Desire password for created user
+
 
   tasks:
   - name: Get list of existing VMs
@@ -47,6 +50,8 @@
       api_host: "{{ proxmox_host }}"
       api_user: "{{ proxmox_user }}"
       api_password: "{{ proxmox_password }}"
+      ciuser: "{{ ci_user }}"
+      cipassword: "{{ ci_password }}"
       validate_certs: no
       node: "{{ proxmox_node }}"
       clone: "{{ template_name }}"
@@ -54,7 +59,7 @@
       name: "{{ vm_base_name }}-{{ item + 1 }}" 
       full: yes
       ipconfig:
-        ipconfig0: "ip=192.168.1.200/24,gw=102.168.1.1"
+        ipconfig0: "ip=dhcp"
       timeout: 300
 
       memory: "{{ vm_memory }}"
@@ -76,51 +81,3 @@
       timeout: 60
     loop: "{{ range(0, vm_count) | list }}"
     when: auto_start
-
-  - name: Wait for guest agent to report IP addresses
-    community.proxmox.proxmox_vm_info:
-      api_host: "{{ proxmox_host }}"
-      api_user: "{{ proxmox_user }}"
-      api_password: "{{ proxmox_password }}"
-      validate_certs: no
-      type: qemu
-      node: "{{ proxmox_node }}"
-      vmid: "{{ starting_vmid | int + item }}"
-    loop: "{{ range(0, vm_count) | list }}"
-    register: vm_info_results
-    retries: 20
-    delay: 10
-    until: >
-      vm_info_results.proxmox_vms[0].agent is defined and
-      vm_info_results.proxmox_vms[0].agent == 1 and
-      vm_info_results.proxmox_vms[0].network is defined and
-      vm_info_results.proxmox_vms[0].network | length > 0
-
-  - name: Extract IP addresses from VMs
-    set_fact:
-      vm_ip_list: "{{ vm_info_results.results | map(attribute='proxmox_vms') | map('first') | map(attribute='network') | map('first') | map(attribute='ip_address') | list }}"
-
-  - name: Add VMs to dynamic inventory
-    add_host:
-      name: "{{ vm_ip_list[item] }}"
-      groups: 
-        - new_vms
-        - "{{ vm_base_name }}_group"
-      ansible_user: your_vm_user
-      ansible_ssh_private_key_file: ~/.ssh/your_key
-    loop: "{{ range(0, vm_count) | list }}"
-
-  - name: Wait for SSH to be available on all VMs
-    wait_for:
-      host: "{{ vm_ip_list[item] }}"
-      port: 22
-      delay: 10
-      timeout: 300
-    loop: "{{ range(0, vm_count) | list }}"
-
-  - name: Import tasks to manage services post creation
-    import_tasks: vm_package_setup.yml
-
-  - name: Display completion
-    debug:
-      msg: "Created {{ vm_count }} VM(s).  Firewalld enabled and JRE21 installed and running on all machines."
