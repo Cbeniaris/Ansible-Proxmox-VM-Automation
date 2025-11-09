@@ -3,7 +3,8 @@
   hosts: homelab
   gather_facts: no
   vars_files:
-    - vault.yml
+    - vault.yml    
+  
   vars:
     proxmox_host: "192.168.1.100"
     proxmox_user: "ansible@pve"
@@ -22,7 +23,7 @@
 
     # Customization variables
     vm_base_name: "rhel-clone" # Base name for VMs
-    vm_count: 1 # Number of VMs to create
+    vm_count: 2 # Number of VMs to create
     vm_memory: 4096 # Memory in MB
     vm_cores: 2 # CPU cores
     auto_start: true # Start VMs after creation
@@ -155,12 +156,14 @@
   vars_files:
     - vault.yml 
   vars:
-    # These two passwords will need to be set in your vault.  They are for your ssh and sudo passwords for the new vms
-    ansible_ssh_pass: "{{ vault_vm_ssh_password }}" # ssh password
-    ansible_become_pass: "{{ vault_vm_password }}"  # sudo password
+    # This password variable set in your vault file will be the password for your user on the newly created vm
+    ansible_ssh_pass: "{{ vault_vm_password }}" 
+    ansible_become_pass: "{{ vault_vm_password }}"  
+    ansible_remote_tmp: "/tmp"
 
   tasks:
   - name: Import post config play
-    ansible.builtin.import_playbook: proxmox_vm_post_config.yml
+    ansible.builtin.import_tasks: proxmox_vm_post_config.yml
 
+    
     

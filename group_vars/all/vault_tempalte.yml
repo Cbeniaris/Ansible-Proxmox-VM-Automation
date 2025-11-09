@@ -1,0 +1,4 @@
+---
+vault_proxmox_password: "YOUR-PROXMOX-PASSWORD-HERE" # Password for logging into proxmox
+vault_vm_password: "VM-USER-PASSWORD-HERE" # password for user on created vm(s)
+

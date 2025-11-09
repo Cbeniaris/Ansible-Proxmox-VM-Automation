@@ -23,10 +23,10 @@
   - name: Display Java version
     debug:
       msg: "{{ java_version_output.stderr_lines }}"
-  
+      
   - name: Set JAVA_HOME environment variable
     lineinfile:
       path: /etc/environment
-      line: "JAVA_HOME=/usr/lib/jvm/jre-{{ java_version }}-openjdk"
+      line: "JAVA_HOME=/usr/lib/jvm/jre-21-openjdk"
       create: yes
       state: present
