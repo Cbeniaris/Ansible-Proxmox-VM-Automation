@@ -4,7 +4,6 @@
   gather_facts: no
   vars_files:
     - vault.yml
-
   vars:
     proxmox_host: "192.168.1.100"
     proxmox_user: "ansible@pve"
@@ -17,15 +16,17 @@
     template_name: "rhel-9.6-template"  
     network_subnet: 192.168.1
 
+    # SSH credentials for the VMs (add these)
+    vm_ssh_user: "ansible"  # or whatever user exists in your template
+    vm_ssh_password: "{{ vault_vm_ssh_password }}" 
+
     # Customization variables
     vm_base_name: "rhel-clone" # Base name for VMs
     vm_count: 1 # Number of VMs to create
     vm_memory: 4096 # Memory in MB
     vm_cores: 2 # CPU cores
     auto_start: true # Start VMs after creation
-    ci_user: "ansible" # Desired name of created user
-    ci_password: "password" # Desire password for created user
-
+  
 
   tasks:
   - name: Get list of existing VMs
@@ -50,16 +51,12 @@
       api_host: "{{ proxmox_host }}"
       api_user: "{{ proxmox_user }}"
       api_password: "{{ proxmox_password }}"
-      ciuser: "{{ ci_user }}"
-      cipassword: "{{ ci_password }}"
       validate_certs: no
       node: "{{ proxmox_node }}"
       clone: "{{ template_name }}"
       newid: "{{ starting_vmid | int + item }}"
       name: "{{ vm_base_name }}-{{ item + 1 }}" 
       full: yes
-      ipconfig:
-        ipconfig0: "ip=dhcp"
       timeout: 300
 
       memory: "{{ vm_memory }}"
@@ -81,3 +78,89 @@
       timeout: 60
     loop: "{{ range(0, vm_count) | list }}"
     when: auto_start
+  
+  - name: Get VM network information
+    community.proxmox.proxmox_vm_info:
+      api_host: "{{ proxmox_host }}"
+      api_user: "{{ proxmox_user }}"
+      api_password: "{{ proxmox_password }}"
+      validate_certs: no
+      node: "{{ proxmox_node }}"
+      vmid: "{{ starting_vmid | int + item }}"
+      network: true
+    loop: "{{ range(0, vm_count) | list }}"
+    register: vm_info
+    retries: 30
+    delay: 5
+    until: >
+      vm_info.proxmox_vms[0].network is defined and
+      vm_info.proxmox_vms[0].network | length > 0 and
+      vm_info.proxmox_vms[0].network | selectattr('name', 'equalto', 'ens18') | list | length > 0 and
+      (vm_info.proxmox_vms[0].network | selectattr('name', 'equalto', 'ens18') | first)['ip-addresses'] is defined
+
+  - name: Extract VM IPs
+    set_fact:
+      vm_ips: >-
+        {{ vm_ips | default([]) + 
+          [(item.proxmox_vms[0].network 
+            | selectattr('name', 'equalto', 'ens18') 
+            | first)['ip-addresses'] 
+            | selectattr('ip-address-type', 'equalto', 'ipv4') 
+            | map(attribute='ip-address') 
+            | first] }}
+    loop: "{{ vm_info.results }}"
+    when: >
+      item.proxmox_vms[0].network is defined and
+      item.proxmox_vms[0].network | selectattr('name', 'equalto', 'ens18') | list | length > 0 and
+      (item.proxmox_vms[0].network | selectattr('name', 'equalto', 'ens18') | first)['ip-addresses'] is defined
+
+  - name: Display collected IPs
+    debug:
+      msg: "VM IPs: {{ vm_ips }}"
+
+  - name: Ensure new_vms group exists in inventory
+    lineinfile:
+      path: ./inventory
+      line: "[new_vms]"
+      create: yes
+      insertbefore: BOF
+    delegate_to: localhost
+
+  - name: Add VMs to persistent inventory file
+    lineinfile:
+      path: ./inventory  # or whatever path you want
+      line: "{{ item }} ansible_host={{ item }} ansible_user={{ vm_ssh_user }}"
+      create: yes
+      insertafter: "\\[new_vms\\]"
+    loop: "{{ vm_ips }}"
+    when: vm_ips is defined
+    delegate_to: localhost
+
+  - name: Refresh inventory
+    meta: refresh_inventory
+
+  - name: Wait for SSH to become available
+    wait_for:
+      host: "{{ item }}"
+      port: 22
+      delay: 10
+      timeout: 300
+    loop: "{{ vm_ips }}"
+    when: vm_ips is defined
+
+- name: Configure new VMs
+  hosts: new_vms
+  gather_facts: yes
+  become: yes
+  vars_files:
+    - vault.yml 
+  vars:
+    # These two passwords will need to be set in your vault.  They are for your ssh and sudo passwords for the new vms
+    ansible_ssh_pass: "{{ vault_vm_ssh_password }}" # ssh password
+    ansible_become_pass: "{{ vault_vm_password }}"  # sudo password
+
+  tasks:
+  - name: Import post config play
+    ansible.builtin.import_playbook: proxmox_vm_post_config.yml
+
+    
