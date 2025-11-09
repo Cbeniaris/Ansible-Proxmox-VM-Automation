@@ -3,8 +3,7 @@
   hosts: homelab
   gather_facts: no
   vars_files:
-    - vault.yml    
-  
+    - ./group_vars/all/vault.yml 
   vars:
     proxmox_host: "192.168.1.100"
     proxmox_user: "ansible@pve"
@@ -12,7 +11,7 @@
     # You will need to make an ansible vault file in this directory with the entry:
     # vault_proxmox_password: "your-password-here"
     #
-    proxmox_password: "{{ vault_proxmox_password }}"  
+    proxmox_password: "{{ vault_proxmox_password }}" 
     proxmox_node: "pve"
     template_name: "rhel-9.6-template"  
     network_subnet: 192.168.1
@@ -23,7 +22,7 @@
 
     # Customization variables
     vm_base_name: "rhel-clone" # Base name for VMs
-    vm_count: 2 # Number of VMs to create
+    vm_count: 1 # Number of VMs to create
     vm_memory: 4096 # Memory in MB
     vm_cores: 2 # CPU cores
     auto_start: true # Start VMs after creation
@@ -59,10 +58,8 @@
       name: "{{ vm_base_name }}-{{ item + 1 }}" 
       full: yes
       timeout: 300
-
       memory: "{{ vm_memory }}"
       cores: "{{ vm_cores }}"
-
       state: present
     loop: "{{ range(0, vm_count) | list }}"
     register: cloned_vms
@@ -121,7 +118,7 @@
 
   - name: Ensure new_vms group exists in inventory
     lineinfile:
-      path: ./inventory
+      path: ./inventory  # the directory of your inventory file.  If else where, adjust path
       line: "[new_vms]"
       create: yes
       insertbefore: BOF
@@ -129,10 +126,10 @@
 
   - name: Add VMs to persistent inventory file
     lineinfile:
-      path: ./inventory  # or whatever path you want
+      path: ./inventory  # the directory of your inventory file.  If else where, adjust path
       line: "{{ item }} ansible_host={{ item }} ansible_user={{ vm_ssh_user }}"
       create: yes
-      insertafter: "\\[new_vms\\]"
+      insertafter: "\\[new_vms\\]"  # Insert AFTER the header for the group
     loop: "{{ vm_ips }}"
     when: vm_ips is defined
     delegate_to: localhost
@@ -154,16 +151,16 @@
   gather_facts: yes
   become: yes
   vars_files:
-    - vault.yml 
+    - ./group_vars/all/vault.yml 
   vars:
-    # This password variable set in your vault file will be the password for your user on the newly created vm
-    ansible_ssh_pass: "{{ vault_vm_password }}" 
-    ansible_become_pass: "{{ vault_vm_password }}"  
     ansible_remote_tmp: "/tmp"
 
   tasks:
   - name: Import post config play
     ansible.builtin.import_tasks: proxmox_vm_post_config.yml
+  
+  - name: Compeltion Message
+    ansible.builtin.shell: echo "VM creation completed. Firewalld enabled and JRE21 installed and configured"
 
     
     
