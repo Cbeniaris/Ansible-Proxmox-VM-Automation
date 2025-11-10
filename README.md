@@ -234,3 +234,7 @@ Ansible-Proxmox-VM-Automation
     This is taken care of if you leave the vm_post_config.yml as is.
 
 6. __Keep templates updated__ with latest security patches
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
