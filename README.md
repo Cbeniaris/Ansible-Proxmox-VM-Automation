@@ -125,7 +125,10 @@ cd Ansible-Proxmox-VM-Automation
 #### Configure Variables
 
 From the project directory, edit the vault_template.yml
-This file is located in ./group_vars/all/vault_template.yml
+This file is located in 
+```
+Ansible-Proxmox-VM-Automation/group_vars/all/vault_template.yml
+```
 You will need to edit this vault template file with the appropriate credentials
 
 ```yaml
@@ -211,23 +214,23 @@ Ansible-Proxmox-VM-Automation
 
     This demo covers this but it warrants a reminder that your sensitive data should always be secured.
 
-   ```bash
-   ansible-vault encrypt /PATH/TO/YOUR/VAULT_FILE.yml
-   ```
+    ```bash
+    ansible-vault encrypt /PATH/TO/YOUR/VAULT_FILE.yml
+    ```
 
 2. __Use API Tokens__ instead of passwords when possible
 
 3. __Limit API user permissions__ to only what's needed:
 
-```bash
-# Instead of Administrator, use specific roles
-pveum aclmod / -user ansible@pve -role PVEVMAdmin
-```
+    ```bash
+    # Instead of Administrator, use specific roles
+    pveum aclmod / -user ansible@pve -role PVEVMAdmin
+    ```
 
 4. __Use SSH keys__ instead of passwords for VM access
 
 5. __Enable firewall__ on Proxmox and VMs
 
-This is taken care of if you leave the vm_post_config.yml as is.
+    This is taken care of if you leave the vm_post_config.yml as is.
 
 6. __Keep templates updated__ with latest security patches
