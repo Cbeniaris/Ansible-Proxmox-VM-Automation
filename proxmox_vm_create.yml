@@ -1,6 +1,6 @@
 ---
 - name: Create Proxmox VMs
-  hosts: homelab
+  hosts: proxmox
   gather_facts: no
   vars_files:
     - ./group_vars/all/vault.yml 
@@ -24,9 +24,7 @@
     vm_base_name: "rhel-clone" # Base name for VMs
     vm_count: 1 # Number of VMs to create
     vm_memory: 4096 # Memory in MB
-    vm_cores: 2 # CPU cores
-    auto_start: true # Start VMs after creation
-  
+    vm_cores: 2 # CPU cores  
 
   tasks:
   - name: Get list of existing VMs
