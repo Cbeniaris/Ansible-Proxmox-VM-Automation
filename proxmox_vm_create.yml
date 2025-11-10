@@ -1,6 +1,6 @@
 ---
 - name: Create Proxmox VMs
-  hosts: proxmox
+  hosts: localhost
   gather_facts: no
   vars_files:
     - ./group_vars/all/vault.yml 

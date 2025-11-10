@@ -1,4 +1,1 @@
 [new_vms]
-
-[proxmox]
-proxmox ansible_host=YOUR-PROXMOX-MACHINE-IP ansible_user=ansible  # Replace this with YOUR proxmox host information

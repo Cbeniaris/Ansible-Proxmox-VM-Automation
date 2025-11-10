@@ -7,8 +7,9 @@ The repo serves as a demonstration for the creation of pre configured RHEL9.6 vi
 ### Software
 
 - Proxmox VE: Version 8.0 or higher  (Tested on Proxmox 8.4)
-- Ansible: Version 2.9 or higher (Tested on 2.19.4)
+- Ansible: Version 2.9 or higher (Tested on 2.19.4) 
 - Python: Version 3.6 or higher (Tested on 3.13.9)
+- Proxmoxer installed on host
 
 ### Ansible Collections
 
@@ -18,7 +19,7 @@ ansible-galaxy collection install community.proxmox
 
 ### Clone Template
 
-You must have __qemu-gust-agent__ installed on your template VM
+You must have __qemu-guest-agent__ installed on your template VM
 
 ## Setup Instructions
 
@@ -76,9 +77,6 @@ systemctl enable qemu-guest-agent
 Before converting to a template, clean up the VM:
 
 ```bash
-# Clean cloud-init state
-cloud-init clean --logs --seed
-
 # Remove machine-id (will be regenerated on first boot)
 truncate -s 0 /etc/machine-id
 rm -f /var/lib/dbus/machine-id
@@ -109,7 +107,7 @@ On your proxmox host:
 qm template <VMID>
 ```
 
-You can also convert the VM to a template by right clicking on your template in the Rroxmox web GUI
+You can also convert the VM to a template by right clicking on your template in the Proxmox web GUI
 
 ### Step 3: Configuring Ansible Variables
 
@@ -140,21 +138,10 @@ vault_vm_password: "VM-USER-PASSWORD-HERE" # password for user on created vm(s)
 Once you've set your vault passwords, secure the file with ansible-vault
 
 ```bash
-ansible-vault encrypt /Path/To/Your/vault_template.yml # if you've renamed the file from the template, use that name
+# if you've renamed your vault_template use that name
+ansible-vault encrypt /Path/To/Your/vault_template.yml 
 ```
 
-#### Inventory File
-
-Configure your inventory file to have your proxmox host
-
-```bash
-[new_vms]
-#this will be populated as the playbook runs with the new vm information
-
-[proxmox]
-# Replace this with your proxmox host information
-proxmox ansible_host=YOUR-PROXMOX-MACHINE-IP ansible_user=ansible #
-```
 
 ### Step 4: Running the Playbook
 
@@ -188,7 +175,7 @@ ansible-playbook proxmox_vm_create.yml \
 
 #### Post Deployment Tasks
 
-post_vm_config.yml serves as a template to configure the machine after it has been created, started, and added to the inventory.  In this instance it is being used to configure firewalld and install JRE21.  You can either edit this task list to your needs, or remove the play from proxmox_vm_create.yml to keep them as a standard template clone.
+proxmox_vm_post_config.yml serves as a template to configure the machine after it has been created, started, and added to the inventory.  In this instance it is being used to configure firewalld and install JRE21.  You can either edit this task list to your needs, or remove the play from proxmox_vm_create.yml to keep them as a standard template clone.
 
 ## File Structure
 
@@ -231,7 +218,7 @@ Ansible-Proxmox-VM-Automation
 
 5. __Enable firewall__ on Proxmox and VMs
 
-    This is taken care of if you leave the vm_post_config.yml as is.
+    This is taken care of if you leave the proxmox_vm_post_config.yml as is.
 
 6. __Keep templates updated__ with latest security patches
 
