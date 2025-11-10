@@ -1,6 +1,11 @@
 # Ansible-Proxmox-VM-Automation
 
-The repo serves as a demonstration for the creation of pre configured RHEL9.6 virtual machines in a proxmox virtual environment.  The playbooks included will create the vms according to specified variables and do post configuration of the Java Runtime Environment.
+This serves as a demonstration for the creation of pre configured Red Hat Enterprise Linux 9.6 virtual machines in a proxmox virtual environment.  The playbooks included will create the vms according to specified variables and do post configuration of the Java Runtime Environment.  
+
+This document will cover:
+- Setting up an api user in Proxmox for remote connection
+- Configuring a template VM for conversion to a template
+- Setting up variables and vault files required for the Ansible playbook to run
 
 ## Prequisites
 
@@ -25,7 +30,7 @@ You must have __qemu-guest-agent__ installed on your template VM
 
 ### Step 1: Create Proxmox API User
 
-For this to work, we create a dedicated API user for Ansible.
+For this to work, create a dedicated API user for Ansible.
 
 ```bash
 # Create API user
@@ -57,15 +62,16 @@ You should see entries for:
 - `/storage`
 - `/sdn`
 
-### Step 2: Configuring your template
+### Step 2: Create your Template
 
-Once you've installed the OS.  SSH into the machine (or use the proxmox console GUI) to finish preparing the VM.
+#### Create a virtual machine
+This will be the one and (hopefully) only time this process will require you to create a VM and install the OS.  Create your VM, specify your hardware parameters, boot the VM, and follow the instructions to install the OS.  The user you create during set up will be the user Ansilbe uses to log in and configure post clone configuations.  Once your VM has been created SSH into the machine (or use the Proxmox console GUI) to connect and finish configuring the template.
 
 #### Install qemu-guest-agent
 
 ```bash
 # Ensure the package is installed
-apt-get install qemu-guest-agent
+dnf install qemu-guest-agent
 
 #Ensure it is running and configured to start on boot
 systemctl start qemu-guest-agent
@@ -97,6 +103,9 @@ cat /dev/null > ~/.bash_history
 # Shutdown the VM
 shutdown -h now
 ```
+
+This must be done to ensure that each created VM from this template will not share the same machine-id.  This will also ensure that ssh ckeys are not cloned across all vms for security purposes.
+
 
 #### Convert the VM to a Template
 
@@ -142,7 +151,6 @@ Once you've set your vault passwords, secure the file with ansible-vault
 ansible-vault encrypt /Path/To/Your/vault_template.yml 
 ```
 
-
 ### Step 4: Running the Playbook
 
 To run the plabybook use:
@@ -162,9 +170,15 @@ By default the variables for VM creation are:
     vm_cores: 2 # CPU cores
 ```
 
-Optionally you can modify these at runtime by using:
+Optionally you can modify any number of these at runtime by using the '-e' flag:
 
 ```bash
+#example of a single single variable
+ansible-playbook proxmox_vm_create.yml -e "vm_count=3" --ask-vault-pass
+```
+
+```bash
+#example of multieple variables
 ansible-playbook proxmox_vm_create.yml \
   -e "vm_base_name=test-machine" \
   -e "vm_count=5" \
@@ -173,9 +187,12 @@ ansible-playbook proxmox_vm_create.yml \
   -e "starting_ip_octet=50"
 ```
 
+Add or remove desired variables for target VM config
+
 #### Post Deployment Tasks
 
-proxmox_vm_post_config.yml serves as a template to configure the machine after it has been created, started, and added to the inventory.  In this instance it is being used to configure firewalld and install JRE21.  You can either edit this task list to your needs, or remove the play from proxmox_vm_create.yml to keep them as a standard template clone.
+
+ proxmox_vm_post_config.yml serves as a template to configure the machine after it has been created, started, and added to the inventory.  Currently the task list is imported in a second play at the end of proxmox_vm_create.yml. In this applicaton, it is being used to configure firewalld and install JRE21.  Any number of post configuration tasks can be aded for your desired result of services and packages. You can either edit this task list to your needs, or remove the play from proxmox_vm_create.yml entirely to keep them as a standard template clone.
 
 ## File Structure
 
@@ -194,33 +211,6 @@ Ansible-Proxmox-VM-Automation
 ├── proxmox_vm_post_config.yml
 └── README.md
 ```
-
-## Security Best Practices
-
-1. __Use Ansible Vault__ for sensitive data:
-
-    This demo covers this but it warrants a reminder that your sensitive data should always be secured.
-
-    ```bash
-    ansible-vault encrypt /PATH/TO/YOUR/VAULT_FILE.yml
-    ```
-
-2. __Use API Tokens__ instead of passwords when possible
-
-3. __Limit API user permissions__ to only what's needed:
-
-    ```bash
-    # Instead of Administrator, use specific roles
-    pveum aclmod / -user ansible@pve -role PVEVMAdmin
-    ```
-
-4. __Use SSH keys__ instead of passwords for VM access
-
-5. __Enable firewall__ on Proxmox and VMs
-
-    This is taken care of if you leave the proxmox_vm_post_config.yml as is.
-
-6. __Keep templates updated__ with latest security patches
 
 ## License
 
