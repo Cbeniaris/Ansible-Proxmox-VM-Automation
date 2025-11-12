@@ -5,18 +5,18 @@
   vars_files:
     - ./group_vars/all/vault.yml 
   vars:
-    proxmox_host: "192.168.1.100"
-    proxmox_user: "ansible@pve"
+    proxmox_host: "192.168.1.100"  # your proxmox host ip
+    proxmox_user: "ansible@pve"  # the Proxmox API user you created
     #
     # You will need to make an ansible vault file in this directory with the entry:
     # vault_proxmox_password: "your-password-here"
     #
     proxmox_password: "{{ vault_proxmox_password }}" 
-    proxmox_node: "pve"
-    template_name: "rhel-9.6-template" 
+    proxmox_node: "pve"  # rename according to your node name
+    template_name: "rhel-9.6-template" # The name of the template you will be cloning
 
     # SSH credentials for the VMs (add these)
-    vm_ssh_user: "ansible"  # or whatever user exists in your template
+    vm_ssh_user: "ansible"  # The name of user you created on the template VM
     vm_ssh_password: "{{ vault_vm_ssh_password }}" 
 
     # Customization variables
@@ -33,17 +33,18 @@
       api_password: "{{ proxmox_password }}"
       validate_certs: no
       node: "{{ proxmox_node }}"
-    register: vm_list
+    register: vm_list  # Store the list of VMs 
 
-  - name: Calculate starting VMID
+  - name: Calculate starting VMID # Find the maximum VM id in your proxmox node and add one for the starting VM id
     set_fact:
       starting_vmid: "{{ (vm_list.proxmox_vms | map(attribute='vmid') | map('int') | max | default(99)) + 1 }}"
+      
 
   - name: Display starting VMID
     debug:
       msg: "Starting VMID: {{ starting_vmid }}, creating {{ vm_count }} VMs"
 
-  - name: Clone VMs from template
+  - name: Clone VMs from template  # Make a number of clones of the vm
     community.proxmox.proxmox_kvm:
       api_host: "{{ proxmox_host }}"
       api_user: "{{ proxmox_user }}"
@@ -85,8 +86,8 @@
       network: true
     loop: "{{ range(0, vm_count) | list }}"
     register: vm_info
-    retries: 30
-    delay: 5
+    retries: 15
+    delay: 3
     until: >
       vm_info.proxmox_vms[0].network is defined and
       vm_info.proxmox_vms[0].network | length > 0 and
@@ -108,6 +109,8 @@
       item.proxmox_vms[0].network is defined and
       item.proxmox_vms[0].network | selectattr('name', 'equalto', 'ens18') | list | length > 0 and
       (item.proxmox_vms[0].network | selectattr('name', 'equalto', 'ens18') | first)['ip-addresses'] is defined
+    # this is ensuring that the network data structure exists, that at least one interface is present, uses network
+    # interface ens18, and get IP if it has addresses assigned
 
   - name: Display collected IPs
     debug:

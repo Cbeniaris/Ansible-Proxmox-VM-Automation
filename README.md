@@ -159,10 +159,11 @@ Ansible-Proxmox-VM-Automation
 
 From the project directory, edit the vault_template.yml
 This file is located in 
+
 ```
 Ansible-Proxmox-VM-Automation/group_vars/all/vault_template.yml
 ```
-You will need to edit this vault template file with the appropriate credentials
+You will need to edit this vault template file with the appropriate credentials.  
 
 ```yaml
 ---
@@ -170,41 +171,41 @@ vault_proxmox_password: "YOUR-PROXMOX-PASSWORD-HERE" # Password for your proxmox
 vault_vm_password: "VM-USER-PASSWORD-HERE" # password for user on created vm(s)
 ```
 
-Once you've set your vault passwords, secure the file with ansible-vault
+When you are finished rename this file to "vault.yml" and secure the file with ansible-vault.  You will be asked for a password to secure the vault file with.  This password will be required when you run the playbook.
 
 ```bash
-# if you've renamed your vault_template use that name
-ansible-vault encrypt /Path/To/Your/vault_template.yml 
+ansible-vault encrypt /Path/To/Your/vault.yml 
 ```
 
 ### Step 4: Running the Playbook
 
-To run the plabybook use:
+At this point you are ready to take advantage of the benefits of ansible.  You've configured your Proxmox machine, created a VM template that will be used to clone, and secured your vault passwords with ansible-vault.  Now it's time to set the variables for the playbook and run it.
+
+The variables for VM creation are in the beginning of the first play of proxmox_vm_create.yml  Feel free to edit these for your application.
+
+```yaml
+# Customize your variables variables
+    vm_base_name: "rhel-clone" # Base name for VMs
+    vm_count: 1 # Number of VMs to create
+    vm_memory: 2048 # Memory in MB.  This is the minimum for RHEL9.6  (4096 MB recommended)
+    vm_cores: 2 # CPU cores.  This is the minimum for RHEL9.6 
+```
+To run the play book, use:
 
 ```bash
 #you will be asked for the password you used to secure your vault file with
 ansible-playbook proxmox_vm_create.yml --ask-vault-pass
 ```
 
-By default the variables for VM creation are:
-
-```yaml
-# Customize your variables variables
-    vm_base_name: "rhel-clone" # Base name for VMs
-    vm_count: 1 # Number of VMs to create
-    vm_memory: 4096 # Memory in MB
-    vm_cores: 2 # CPU cores
-```
-
 Optionally you can modify any number of these at runtime by using the '-e' flag:
 
 ```bash
-#example of a single single variable
+#example of chanigng a single variable
 ansible-playbook proxmox_vm_create.yml -e "vm_count=3" --ask-vault-pass
 ```
 
 ```bash
-#example of multieple variables
+#example of multipule variables
 ansible-playbook proxmox_vm_create.yml \
   -e "vm_base_name=test-machine" \
   -e "vm_count=5" \
@@ -217,12 +218,7 @@ Add or remove desired variables for target VM config
 
 #### Post Deployment Tasks
 
-
  proxmox_vm_post_config.yml serves as a template to configure the machine after it has been created, started, and added to the inventory.  Currently the task list is imported in a second play at the end of proxmox_vm_create.yml. In this applicaton, it is being used to configure firewalld and install JRE21.  Any number of post configuration tasks can be aded for your desired result of services and packages. You can either edit this task list to your needs, or remove the play from proxmox_vm_create.yml entirely to keep them as a standard template clone.
-
-## File Structure
-
-
 
 ## License
 
