@@ -197,25 +197,6 @@ To run the play book, use:
 ansible-playbook proxmox_vm_create.yml --ask-vault-pass
 ```
 
-Optionally you can modify any number of these at runtime by using the '-e' flag:
-
-```bash
-#example of chanigng a single variable
-ansible-playbook proxmox_vm_create.yml -e "vm_count=3" --ask-vault-pass
-```
-
-```bash
-#example of multipule variables
-ansible-playbook proxmox_vm_create.yml \
-  -e "vm_base_name=test-machine" \
-  -e "vm_count=5" \
-  -e "vm_memory=16384" \
-  -e "vm_cores=8" \
-  -e "starting_ip_octet=50"
-```
-
-Add or remove desired variables for target VM config
-
 #### Post Deployment Tasks
 
  proxmox_vm_post_config.yml serves as a template to configure the machine after it has been created, started, and added to the inventory.  Currently the task list is imported in a second play at the end of proxmox_vm_create.yml. In this applicaton, it is being used to configure firewalld and install JRE21.  Any number of post configuration tasks can be aded for your desired result of services and packages. You can either edit this task list to your needs, or remove the play from proxmox_vm_create.yml entirely to keep them as a standard template clone.

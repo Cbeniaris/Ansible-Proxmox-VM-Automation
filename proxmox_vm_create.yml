@@ -22,8 +22,8 @@
     # Customization variables
     vm_base_name: "rhel-clone" # Base name for VMs
     vm_count: 1 # Number of VMs to create
-    vm_memory: 4096 # Memory in MB
-    vm_cores: 2 # CPU cores  
+    vm_memory: 2048 # Memory in MB.  This is the minimum for RHEL9.6  (4096 MB recommended)
+    vm_cores: 2 # CPU cores.  This is the minimum for RHEL9.6 
 
   tasks:
   - name: Get list of existing VMs
@@ -123,10 +123,12 @@
   - name: Add VMs to persistent inventory file
     lineinfile:
       path: ./inventory  # the directory of your inventory file.  If else where, adjust path
-      line: "{{ item }} ansible_host={{ item }} ansible_user={{ vm_ssh_user }}"
+      line: "{{ vm_base_name }}-{{ idx + 1 }} ansible_host={{ item }} ansible_user={{ vm_ssh_user }}"
       create: yes
       insertafter: "\\[new_vms\\]"  # Insert AFTER the header for the group
     loop: "{{ vm_ips }}"
+    loop_control:
+      index_var: idx
     when: vm_ips is defined
     delegate_to: localhost
 
@@ -155,5 +157,5 @@
   - name: Import post config play
     ansible.builtin.import_tasks: proxmox_vm_post_config.yml
   
-  - name: Compeltion Message
+  - name: Completion Message
     ansible.builtin.shell: echo "VM creation completed. Firewalld enabled and JRE21 installed and configured"
