@@ -5,18 +5,18 @@
   vars_files:
     - ./group_vars/all/vault.yml 
   vars:
-    proxmox_host: "192.168.1.100"  # your proxmox host ip
-    proxmox_user: "ansible@pve"  # the Proxmox API user you created
+    proxmox_host: "192.168.1.100"  # Your Proxmox host ip
+    proxmox_user: "ansible@pve"  # The API user you created 
     #
     # You will need to make an ansible vault file in this directory with the entry:
     # vault_proxmox_password: "your-password-here"
     #
     proxmox_password: "{{ vault_proxmox_password }}" 
-    proxmox_node: "pve"  # rename according to your node name
-    template_name: "rhel-9.6-template" # The name of the template you will be cloning
+    proxmox_node: "pve" # Your Proxmox node
+    template_name: "rhel-9.6-template" # The name of your template VM
 
     # SSH credentials for the VMs (add these)
-    vm_ssh_user: "ansible"  # The name of user you created on the template VM
+    vm_ssh_user: "ansible"  # or whatever user exists in your template
     vm_ssh_password: "{{ vault_vm_ssh_password }}" 
 
     # Customization variables
@@ -33,18 +33,17 @@
       api_password: "{{ proxmox_password }}"
       validate_certs: no
       node: "{{ proxmox_node }}"
-    register: vm_list  # Store the list of VMs 
+    register: vm_list
 
-  - name: Calculate starting VMID # Find the maximum VM id in your proxmox node and add one for the starting VM id
+  - name: Calculate starting VMID
     set_fact:
       starting_vmid: "{{ (vm_list.proxmox_vms | map(attribute='vmid') | map('int') | max | default(99)) + 1 }}"
-      
 
   - name: Display starting VMID
     debug:
       msg: "Starting VMID: {{ starting_vmid }}, creating {{ vm_count }} VMs"
 
-  - name: Clone VMs from template  # Make a number of clones of the vm
+  - name: Clone VMs from template
     community.proxmox.proxmox_kvm:
       api_host: "{{ proxmox_host }}"
       api_user: "{{ proxmox_user }}"
@@ -73,7 +72,6 @@
       state: started
       timeout: 60
     loop: "{{ range(0, vm_count) | list }}"
-    when: auto_start
   
   - name: Get VM network information
     community.proxmox.proxmox_vm_info:
@@ -86,8 +84,8 @@
       network: true
     loop: "{{ range(0, vm_count) | list }}"
     register: vm_info
-    retries: 15
-    delay: 3
+    retries: 30
+    delay: 5
     until: >
       vm_info.proxmox_vms[0].network is defined and
       vm_info.proxmox_vms[0].network | length > 0 and
@@ -109,8 +107,6 @@
       item.proxmox_vms[0].network is defined and
       item.proxmox_vms[0].network | selectattr('name', 'equalto', 'ens18') | list | length > 0 and
       (item.proxmox_vms[0].network | selectattr('name', 'equalto', 'ens18') | first)['ip-addresses'] is defined
-    # this is ensuring that the network data structure exists, that at least one interface is present, uses network
-    # interface ens18, and get IP if it has addresses assigned
 
   - name: Display collected IPs
     debug:
@@ -159,8 +155,5 @@
   - name: Import post config play
     ansible.builtin.import_tasks: proxmox_vm_post_config.yml
   
-  - name: Completion Message
+  - name: Compeltion Message
     ansible.builtin.shell: echo "VM creation completed. Firewalld enabled and JRE21 installed and configured"
-
-    
-    
