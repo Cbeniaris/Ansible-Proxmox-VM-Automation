@@ -156,7 +156,7 @@
   - name: Import post config play
     ansible.builtin.import_tasks: proxmox_vm_post_config.yml
   
-  - name: Compeltion Message
+  - name: Completion Message
     ansible.builtin.shell: echo "VM creation completed. Firewalld enabled and JRE21 installed and configured"
 
     

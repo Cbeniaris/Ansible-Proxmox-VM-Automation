@@ -4,20 +4,26 @@ This serves as a demonstration for the creation of pre configured Red Hat Enterp
 
 This document will cover:
 - Setting up an api user in Proxmox for remote connection
-- Configuring a template VM for conversion to a template
+- Configuring a template VM for conversion to a cloning template
 - Setting up variables and vault files required for the Ansible playbook to run
 
 ## Prequisites
 
-### Software
+### Software/Hardware
 
-- Proxmox VE: Version 8.0 or higher  (Tested on Proxmox 8.4)
+#### Hardware
+
+A machine running - Proxmox VE: Version 8.0 or higher  (Tested on Proxmox 8.4)
+
+#### Software
+
+Required on Host:
 - Ansible: Version 2.9 or higher (Tested on 2.19.4) 
 - Python: Version 3.6 or higher (Tested on 3.13.9)
 - Proxmoxer installed on host
+- Ansible Proxmox Collection
 
-### Ansible Collections
-
+To install the community collection for Proxmox you use this command on your host machine:
 ```bash
 ansible-galaxy collection install community.proxmox
 ```
@@ -57,15 +63,19 @@ pveum user permissions ansible@pve
 ```
 
 You should see entries for:
+```bash
+- / (root path)  # root file system
+- /storage  # access for VM disks, ISOs, container templates, etc.
+- /sdn  # Software Defined Networking. Virtual networks, zones, subnets, etc.
+```
 
-- `/` (root path)
-- `/storage`
-- `/sdn`
+Why we're doing this:
+The API allows for a consistent interface with predefined endoints, convenient error handling, and explicit permissions.  API calls are also logged separately, making tracking automation vs. manual changes easier.  For one off operations, ssh is great.  For larger automation tasks, the API is the way to go.
 
 ### Step 2: Create your Template
 
 #### Create a virtual machine
-This will be the one and (hopefully) only time this process will require you to create a VM and install the OS.  Create your VM, specify your hardware parameters, boot the VM, and follow the instructions to install the OS.  The user you create during set up will be the user Ansilbe uses to log in and configure post clone configuations.  Once your VM has been created SSH into the machine (or use the Proxmox console GUI) to connect and finish configuring the template.
+This will be the one and (hopefully) only time this process will require you to create a VM and install the OS.  Create your VM on your Proxmox machine, specify your hardware parameters, boot the VM, and follow the instructions to install the OS.  The user you create during set up will be the user Ansilbe uses to log in and configure post clone configuations.  Once your VM has been created SSH into the machine (or use the Proxmox console GUI) to connect and finish configuring the template.
 
 #### Install qemu-guest-agent
 
@@ -77,6 +87,8 @@ dnf install qemu-guest-agent
 systemctl start qemu-guest-agent
 systemctl enable qemu-guest-agent
 ```
+
+Qemu-guest-agent a helper daemon that allows the hypervisor to communicate more effectively with the guest VM.  IT allowes for proper shutdown ofthe guest with ACPI calls, freezing the guest file system when making backups, and time syncronization on boot.
 
 #### Clean your template
 
@@ -104,12 +116,12 @@ cat /dev/null > ~/.bash_history
 shutdown -h now
 ```
 
-This must be done to ensure that each created VM from this template will not share the same machine-id.  This will also ensure that ssh ckeys are not cloned across all vms for security purposes.
+This must be done to ensure that each created VM from this template will not share the same machine-id.  Should the be skipped, it would cause conflicts with networking, bootloader functionality, and application and system stability. This will also ensure that ssh keys are not cloned across all vms for security purposes.
 
 
 #### Convert the VM to a Template
 
-On your proxmox host:
+Back on your Proxmox machine you're ready to convert the VM to a template eligible for cloning:
 
 ```bash
 # convert VM to template with your template's id
@@ -120,8 +132,6 @@ You can also convert the VM to a template by right clicking on your template in 
 
 ### Step 3: Configuring Ansible Variables
 
-This project manages ansible variables in the gorup_vars directory along with using ansible vault.
-
 #### Clone this Repository
 
 ```bash
@@ -130,6 +140,22 @@ cd Ansible-Proxmox-VM-Automation
 ```
 
 #### Configure Variables
+
+This project manages ansible variables in the gorup_vars directory along with using ansible vault.
+
+```
+Ansible-Proxmox-VM-Automation
+├── ansible.cfg
+├── group_vars
+│   ├── all
+│   │   └── vault_template
+│   └── new_vms.yml
+├── inventory
+├── LICENSE
+├── proxmox_vm_create.yml
+├── proxmox_vm_post_config.yml
+└── README.md
+```
 
 From the project directory, edit the vault_template.yml
 This file is located in 
@@ -196,21 +222,7 @@ Add or remove desired variables for target VM config
 
 ## File Structure
 
-```
-Ansible-Proxmox-VM-Automation
-├── ansible.cfg
-├── group_vars
-│   ├── all
-│   │   ├── vault_template
-│   │   └── vault.yml
-│   └── new_vms.yml
-├── inventory
-├── inventory_template
-├── LICENSE
-├── proxmox_vm_create.yml
-├── proxmox_vm_post_config.yml
-└── README.md
-```
+
 
 ## License
 
