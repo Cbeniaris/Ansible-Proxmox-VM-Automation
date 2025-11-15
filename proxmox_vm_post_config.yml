@@ -9,6 +9,11 @@
   - name: Update DNF cache
     dnf:
       update_cache: yes
+
+  - name: DNF update
+    ansible.builtin.dnf:
+      name: "*"
+      state: latest
     
   - name: Install Java JRE
     dnf:

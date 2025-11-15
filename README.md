@@ -1,6 +1,6 @@
 # Ansible-Proxmox-VM-Automation
 
-This serves as a demonstration for the creation of pre configured Red Hat Enterprise Linux 9.6 virtual machines in a proxmox virtual environment.  The playbooks included will create the vms according to specified variables and do post configuration of the Java Runtime Environment.  
+This serves as a demonstration for the creation of pre configured Red Hat Enterprise Linux 10.1 virtual machines in a proxmox virtual environment.  The playbooks included will create the vms according to specified variables and do post configuration of the Java Runtime Environment.  
 
 This document will cover:
 - Setting up an api user in Proxmox for remote connection
@@ -187,8 +187,8 @@ The variables for VM creation are in the beginning of the first play of proxmox_
 # Customize your variables variables
     vm_base_name: "rhel-clone" # Base name for VMs
     vm_count: 1 # Number of VMs to create
-    vm_memory: 2048 # Memory in MB.  This is the minimum for RHEL9.6  (4096 MB recommended)
-    vm_cores: 2 # CPU cores.  This is the minimum for RHEL9.6 
+    vm_memory: 2048 # Memory in MB.  This is the minimum for RHEL10.1  (4096 MB recommended)
+    vm_cores: 2 # CPU cores.  This is the minimum for RHEL10.1 
 ```
 To run the play book, use:
 

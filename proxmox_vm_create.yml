@@ -13,7 +13,7 @@
     #
     proxmox_password: "{{ vault_proxmox_password }}" 
     proxmox_node: "pve" # Your Proxmox node
-    template_name: "rhel-9.6-template" # The name of your template VM
+    template_name: "rhel-10.1-template" # The name of your template VM
 
     # SSH credentials for the VMs (add these)
     vm_ssh_user: "ansible"  # or whatever user exists in your template
@@ -22,8 +22,8 @@
     # Customization variables
     vm_base_name: "rhel-clone" # Base name for VMs
     vm_count: 1 # Number of VMs to create
-    vm_memory: 2048 # Memory in MB.  This is the minimum for RHEL9.6  (4096 MB recommended)
-    vm_cores: 2 # CPU cores.  This is the minimum for RHEL9.6 
+    vm_memory: 2048 # Memory in MB.  This is the minimum for RHEL10.1  (4096 MB recommended)
+    vm_cores: 2 # CPU cores.  This is the minimum for RHEL10.1 
 
   tasks:
   - name: Get list of existing VMs
@@ -84,7 +84,7 @@
       network: true
     loop: "{{ range(0, vm_count) | list }}"
     register: vm_info
-    retries: 30
+    retries: 15
     delay: 5
     until: >
       vm_info.proxmox_vms[0].network is defined and
