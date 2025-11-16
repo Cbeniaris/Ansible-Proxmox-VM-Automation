@@ -114,7 +114,7 @@
 
   - name: Ensure new_vms group exists in inventory
     lineinfile:
-      path: ./inventory  # the directory of your inventory file.  If else where, adjust path
+      path: ./inventory  # the directory of your inventory file.  If elsewhere, adjust path
       line: "[new_vms]"
       create: yes
       insertbefore: BOF
@@ -122,7 +122,7 @@
 
   - name: Add VMs to persistent inventory file
     lineinfile:
-      path: ./inventory  # the directory of your inventory file.  If else where, adjust path
+      path: ./inventory  # the directory of your inventory file.  If elsewhere, adjust path
       line: "{{ vm_base_name }}-{{ idx + 1 }} ansible_host={{ item }} ansible_user={{ vm_ssh_user }}"
       create: yes
       insertafter: "\\[new_vms\\]"  # Insert AFTER the header for the group

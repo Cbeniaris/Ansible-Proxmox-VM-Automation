@@ -70,12 +70,13 @@ You should see entries for:
 ```
 
 Why we're doing this:
-The API allows for a consistent interface with predefined endoints, convenient error handling, and explicit permissions.  API calls are also logged separately, making tracking automation vs. manual changes easier.  For one off operations, ssh is great.  For larger automation tasks, the API is the way to go.
+The API allows for a consistent interface with predefined endpoints, convenient error handling, and explicit permissions.  API calls are also logged separately, making tracking automation vs. manual changes easier.  For one off operations, ssh is great.  For larger automation tasks, the API is the way to go.
 
 ### Step 2: Create your Template
 
 #### Create a virtual machine
-This will be the one and (hopefully) only time this process will require you to create a VM and install the OS.  Create your VM on your Proxmox machine, specify your hardware parameters, boot the VM, and follow the instructions to install the OS.  The user you create during set up will be the user Ansilbe uses to log in and configure post clone configuations.  Once your VM has been created SSH into the machine (or use the Proxmox console GUI) to connect and finish configuring the template.
+
+This will be the one and only time this process will require you to create a VM and install the OS.  Create your VM on your Proxmox machine, specify your hardware parameters, boot the VM, and follow the instructions to install the OS.  The user you create during set up will be the user Ansilbe uses to log in and configure post clone configuations.  Once your VM has been created SSH into the machine (or use the Proxmox console GUI) to connect and finish configuring the template.
 
 #### Install qemu-guest-agent
 
@@ -88,7 +89,7 @@ systemctl start qemu-guest-agent
 systemctl enable qemu-guest-agent
 ```
 
-Qemu-guest-agent a helper daemon that allows the hypervisor to communicate more effectively with the guest VM.  IT allowes for proper shutdown ofthe guest with ACPI calls, freezing the guest file system when making backups, and time syncronization on boot.
+Qemu-guest-agent a helper daemon that allows the hypervisor to communicate more effectively with the guest VM.  IT allowes for proper shutdown of the guest with ACPI calls, freezing the guest file system when making backups, and time syncronization on boot.
 
 #### Clean your template
 
@@ -116,7 +117,7 @@ cat /dev/null > ~/.bash_history
 shutdown -h now
 ```
 
-This must be done to ensure that each created VM from this template will not share the same machine-id.  Should the be skipped, it would cause conflicts with networking, bootloader functionality, and application and system stability. This will also ensure that ssh keys are not cloned across all vms for security purposes.
+This must be done to ensure that each created VM from this template will not share the same machine-id.  Should this be skipped, it would cause conflicts with networking, bootloader functionality, and application and system stability. This will also ensure that ssh keys are not cloned across all VMs for security purposes.
 
 
 #### Convert the VM to a Template
@@ -141,7 +142,7 @@ cd Ansible-Proxmox-VM-Automation
 
 #### Configure Variables
 
-This project manages ansible variables in the gorup_vars directory along with using ansible vault.
+This project manages Ansible variables in the gorup_vars directory along with using Ansible vault.
 
 ```
 Ansible-Proxmox-VM-Automation
@@ -168,10 +169,10 @@ You will need to edit this vault template file with the appropriate credentials.
 ```yaml
 ---
 vault_proxmox_password: "YOUR-PROXMOX-PASSWORD-HERE" # Password for your proxmox vm login
-vault_vm_password: "VM-USER-PASSWORD-HERE" # password for user on created vm(s)
+vault_vm_password: "VM-USER-PASSWORD-HERE" # password for user on created VM(s)
 ```
 
-When you are finished rename this file to "vault.yml" and secure the file with ansible-vault.  You will be asked for a password to secure the vault file with.  This password will be required when you run the playbook.
+When you are finished rename this file to "vault.yml" and secure the file with Ansible vault.  You will be asked for a password to secure the vault file with.  This password will be required when you run the playbook.
 
 ```bash
 ansible-vault encrypt /Path/To/Your/vault.yml 
@@ -199,12 +200,12 @@ ansible-playbook proxmox_vm_create.yml --ask-vault-pass
 
 #### Post Deployment Tasks
 
- proxmox_vm_post_config.yml serves as a template to configure the machine after it has been created, started, and added to the inventory.  Currently the task list is imported in a second play at the end of proxmox_vm_create.yml. In this applicaton, it is being used to configure firewalld and install JRE21.  Any number of post configuration tasks can be aded for your desired result of services and packages. You can either edit this task list to your needs, or remove the play from proxmox_vm_create.yml entirely to keep them as a standard template clone.
+ proxmox_vm_post_config.yml serves as a template to configure the machine after it has been created, started, and added to the inventory.  Currently the task list is imported in a second play at the end of proxmox_vm_create.yml. In this applicaton, it is being used to configure firewalld and install JRE21.  Any number of post configuration tasks can be added for your desired result of services and packages. You can either edit this task list to your needs, or remove the play from proxmox_vm_create.yml entirely to keep them as a standard template clone.
 
 
 ### Why Ansible?
 
-From a distance, it's easy to look at a project like this and think, "Ok, so you cloned a few VMs.  What's the big deal?"  Yes, it is more than possible to clone each VM one by one and install packages to each instance.  However, that line of thinking assumes that ansible is no longer useful after initial setup.  By having each VM added to your ansible inventory, you can go on to write play books that target some or all of these for even more automation.  A possible exercise for this would be to write a play book that backs up each VM you created to a shared storage and have ansible run that play book weekly.  Possibilities are only limited by your needs and access to an end point for ansible to connect to.
+From a distance, it's easy to look at a project like this and think, "Ok, so you cloned a few VMs.  What's the big deal?"  Yes, it is more than possible to clone each VM one by one and install packages to each instance.  However, that line of thinking assumes that Ansible is no longer useful after initial setup.  By having each VM added to your Ansible inventory, you can go on to write play books that target some or all of these for even more automation.  A possible exercise for this would be to write a play book that backs up each VM you created to a shared storage and have Ansible run that play book weekly.  Possibilities are only limited by your needs and access to an end point for Ansible to connect to.
 
 ## License
 
