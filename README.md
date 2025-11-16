@@ -201,6 +201,11 @@ ansible-playbook proxmox_vm_create.yml --ask-vault-pass
 
  proxmox_vm_post_config.yml serves as a template to configure the machine after it has been created, started, and added to the inventory.  Currently the task list is imported in a second play at the end of proxmox_vm_create.yml. In this applicaton, it is being used to configure firewalld and install JRE21.  Any number of post configuration tasks can be aded for your desired result of services and packages. You can either edit this task list to your needs, or remove the play from proxmox_vm_create.yml entirely to keep them as a standard template clone.
 
+
+### Why Ansible?
+
+From a distance, it's easy to look at a project like this and think, "Ok, so you cloned a few VMs.  What's the big deal?"  Yes, it is more than possible to clone each VM one by one and install packages to each instance.  However, that line of thinking assumes that ansible is no longer useful after initial setup.  By having each VM added to your ansible inventory, you can go on to write play books that target some or all of these for even more automation.  A possible exercise for this would be to write a play book that backs up each VM you created to a shared storage and have ansible run that play book weekly.  Possibilities are only limited by your needs and access to an end point for ansible to connect to.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
