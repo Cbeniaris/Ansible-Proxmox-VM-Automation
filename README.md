@@ -1,6 +1,6 @@
 # Ansible-Proxmox-VM-Automation
 
-This serves as a demonstration for the creation of pre configured Red Hat Enterprise Linux 10.1 virtual machines in a proxmox virtual environment.  The playbooks included will create the vms according to specified variables and do post configuration of the Java Runtime Environment.  
+This serves as a demonstration for the creation of pre configured Red Hat Enterprise Linux 10.1 virtual machines in a proxmox virtual environment.  The playbooks included will create the vms according to specified variables and do post configuration of the Java Runtime Environment.  It should be noted that this can be easily adapted __any__ disribution of linux (SUSE, Ubunutum, Fedora, etc.) as well as Microsoft Windows. I have chosen RHEL for this demonstration but any OS will do.  The method of automation will still apply.  
 
 This document will cover:
 - Setting up an api user in Proxmox for remote connection
